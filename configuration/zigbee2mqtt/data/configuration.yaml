@@ -17,10 +17,10 @@ mqtt:
   password: my_password
 
   # Optional: Include device information to mqtt messages (default: false)
-  include_device_information: true
+  include_device_information: false
   
   # Optional: MQTT keepalive in seconds (default: 60)
-  keepalive: 30
+  keepalive: 120
 
 ## Serial settings
 serial:
