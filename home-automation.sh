@@ -1,21 +1,15 @@
 #!/bin/bash
 
-DOCKER_PERSISTENT_ROOT=/opt
 
-DOCKER_STORAGE_DIR=storage
-DOCKER_PROJECT_NAME=ha
-DOCKER_COMPOSE_FILE=./home-automation.yaml
-HOME_AUTOMATION_SRC_CONFIG=./configuration
+#
+# Load configuration 
+#
+SRC_CONFIG_DIR=configuration
+. ./${SRC_CONFIG_DIR}/home-automation.config || { >&2 echo "Error: configuration file not found!" ; exit 1 ; }
 
-PROJECT_STORAGE_PATH=${DOCKER_PERSISTENT_ROOT}/${DOCKER_STORAGE_DIR}/${DOCKER_PROJECT_NAME}
-
-# HOME ASSISTANT
-HOME_ASSISTANT_DIR=${PROJECT_STORAGE_PATH}/homeassistant
-# MQTT
-MQTT_DIR=${PROJECT_STORAGE_PATH}/mqtt
-# ZIGBEE2MQTT
-ZIGBEE2MQTT_DIR=${PROJECT_STORAGE_PATH}/zigbee2mqtt
-
+#
+# Are you root?
+#
 if [[ "${UID}" -ne 0 ]]
 then
     >&2 echo "This script must be run as root, re-exec with sudo..."
@@ -23,49 +17,96 @@ then
     exit
 fi
 
+#
+# Is compose file present?
+#
 if [[ ! -e ${DOCKER_COMPOSE_FILE} ]]
 then
-    >&2 echo "File ${DOCKER_COMPOSE_FILE} does not exist"
-    exit 1
+    echo "File ${DOCKER_COMPOSE_FILE} does not exist"
+    INITIAL_SETUP=${TRUE}
 fi
 
 if [[ ! -x "$(command -v docker 2>/dev/null)" ]]
 then
-    >&2 echo "docker binary not found or not in the PATH"
-    >&2 echo "make sure docker-ce engine is installed and working"
-    >&2 echo "see: https://docs.docker.com/install"
-    exit 1
+    >&2 echo "'docker' binary not found or not in the PATH"
+    >&2 echo "Make sure docker-ce engine is installed and working"
+    >&2 echo "See: https://docs.docker.com/install"
+    exit ${FAILURE}
 fi
 
-if [[ -x "$(command -v  docker-compose 2>/dev/null)" ]]
+if [[ -x "$(command -v docker-compose 2>/dev/null)" ]]
 then
     DOCKER_COMPOSE_BIN=$(command -v docker-compose)
 else
-    >&2 echo "docker-compose binary not found or not in the PATH"
-    >&2 echo "see: https://github.com/docker/compose/releases"
-    exit 1
+    >&2 echo "'docker-compose' binary not found or not in the PATH"
+    >&2 echo "See: https://github.com/docker/compose/releases"
+    exit ${FAILURE}
 fi
 
-case ${1} in
-    start|up)
-        [[ ! -e  ${PROJECT_STORAGE_PATH} ]] && mkdir -p ${PROJECT_STORAGE_PATH}
-        for DIR in ${HOME_ASSISTANT_DIR} ${MQTT_DIR} ${ZIGBEE2MQTT_DIR}
-        do
-            if [[ ! -e  ${DIR} ]]
-            then
-                (
-                  umask 022
-                  cp -r ${HOME_AUTOMATION_SRC_CONFIG}/"$(basename ${DIR})" ${PROJECT_STORAGE_PATH}
-                  chown -R root:root ${DIR}
-                )
-            fi
-        done
+if [[ ${INITIAL_SETUP} -eq ${TRUE} ]]
+then
 
-        ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${DOCKER_PROJECT_NAME} up -d 2>&1
-        ;;
-    *)
+    #
+    # Setup directory structure
+    #
+    [[ ! -e  ${PROJECT_PATH} ]] && mkdir -p ${PROJECT_PATH}
+    for DIR in ${HOME_ASSISTANT_DIR} ${MQTT_DIR} ${ZIGBEE2MQTT_DIR}
+    do
+        if [[ ! -e "${DIR}" ]]
+        then
+            (
+              umask 022
+              cp -r ${SRC_CONFIG_DIR}/"$(basename ${DIR})" ${PROJECT_PATH}
+              chown -R root:root ${DIR}
+            )
+        fi
+    done
+    
+    #
+    # Update template YAML files with config values
+    #
+    TEMPLATE_FILES="$(find ${PROJECT_PATH} -type f -name "*-template")"
+    for FILE in ${TEMPLATE_FILES}
+    do
+        echo "Updating ${FILE} file..."
+        envsubst <"${FILE}" >"${FILE%%-template}"
+        rm -rf "${FILE}"
+    done
+    
+    #
+    # Setup MQTT password
+    #
+    if [[ ! -e ${MQTT_DIR}/data/passwd-template ]]
+    then
+        docker run --rm -v ${MQTT_DIR}/data/passwd:/mosquitto/data/passwd eclipse-mosquitto mosquitto_passwd -U /mosquitto/data/pwdfile
+        if [[ $? -eq ${SUCCESS} ]]
+        then
+            echo "MQTT credentials has been setup successfully"
+        else
+            >&2 echo "Error: Unable to set up MQTT credentials"
+            exit ${FAILURE}
+        fi
+    fi
+    
+    #
+    # Create compose file
+    #
+    if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${DOCKER_COMPOSE_FILE}.template ]]
+    then
+        cp ${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template ./${DOCKER_COMPOSE_FILE}
+    fi
 
-        ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${DOCKER_PROJECT_NAME} "${@}" 2>&1
-        ;;
-esac
-exit 0
+else
+    case ${1} in
+        start|up)
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} up -d --remove-orphans 2>&1
+            RC=$?
+            ;;
+        *)
+
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} "${@}" 2>&1
+            RC=$?
+            ;;
+    esac
+fi
+exit ${RC}
