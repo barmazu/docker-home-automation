@@ -1,0 +1,59 @@
+version: "3.7"
+
+networks:
+    ha-network:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.28.0.0/29
+
+services:
+    mqtt:
+        image: eclipse-mosquitto
+        restart: unless-stopped
+        environment:
+            - "TZ=${DOCKER_TZ}"
+        ports:
+            - "${MQTT_PORT}:1883"
+        networks:
+            ha-network:
+                ipv4_address: 172.28.0.2
+        volumes:
+            - ${MQTT_DIR}/config:/mosquitto/config:ro
+            - ${MQTT_DIR}/data:/mosquitto/data
+            - ${MQTT_DIR}/log:/mosquitto/log
+            
+    zigbee2mqtt:
+        image: koenkk/zigbee2mqtt
+        restart: unless-stopped
+        privileged: true
+        environment:
+            - "TZ=${DOCKER_TZ}"
+        devices:
+            - "${ZB_DEVICE_PATH}:${ZB_DEVICE_PATH}"
+        networks:
+            ha-network:
+                ipv4_address: 172.28.0.3
+        depends_on:
+            - "mqtt"
+        volumes:
+            - ${ZIGBEE2MQTT_DIR}/data:/app/data
+            - /run/udev:/run/udev:ro
+
+    home-assistant:
+        image: homeassistant/home-assistant:stable
+        restart: unless-stopped
+        init: true
+        environment:
+            - "TZ=${DOCKER_TZ}"
+        ports:
+            - "${HA_PORT}:8123"
+        networks:
+            ha-network:
+                ipv4_address: 172.28.0.4
+        depends_on:
+            - "mqtt"
+            - "zigbee2mqtt"
+        volumes:
+            - ${HOME_ASSISTANT_DIR}/config:/config
+
