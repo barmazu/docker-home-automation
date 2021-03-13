@@ -13,8 +13,8 @@ mqtt:
   server: 'mqtt://172.28.0.2:1883'
   
   # MQTT server authentication, uncomment if required:
-  user: ${MQTT_USERNAME}
-  password: ${MQTT_PASSWORD}
+  user: '!secret mqtt_username'
+  password: '!secret mqtt_password'
 
   # Optional: Include device information to mqtt messages (default: false)
   include_device_information: false

@@ -11,8 +11,8 @@ mqtt:
   discovery: true
   broker: 172.28.0.2
   port: 1883
-  username: '${MQTT_USERNAME}'
-  password: '${MQTT_PASSWORD}'
+  username: !secret mqtt_username
+  password: !secret mqtt_password
   birth_message:
     topic: 'hass/status'
     payload: 'online'

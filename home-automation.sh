@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 #
 # Load configuration 
 #
@@ -57,7 +56,6 @@ then
             (
               umask 022
               cp -r ${SRC_CONFIG_DIR}/"$(basename ${DIR})" ${PROJECT_PATH}
-              chown -R root:root ${DIR}
             )
         fi
     done
@@ -91,7 +89,7 @@ then
     #
     # Create compose file
     #
-    if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${DOCKER_COMPOSE_FILE}.template ]]
+    if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${DOCKER_COMPOSE_FILE}-template ]]
     then
         cp ${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template ./${DOCKER_COMPOSE_FILE}
     fi
