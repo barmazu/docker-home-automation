@@ -19,10 +19,10 @@ services:
             ha-network:
                 ipv4_address: 172.28.0.2
         volumes:
-            - ${MQTT_DIR}/config:/mosquitto/config:ro
+            - ${MQTT_DIR}/config:/mosquitto/config
             - ${MQTT_DIR}/data:/mosquitto/data
             - ${MQTT_DIR}/log:/mosquitto/log
-            
+
     zigbee2mqtt:
         image: koenkk/zigbee2mqtt
         restart: unless-stopped

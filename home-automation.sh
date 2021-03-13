@@ -59,7 +59,7 @@ then
             )
         fi
     done
-    
+
     #
     # Update template YAML files with config values
     #
@@ -70,13 +70,13 @@ then
         envsubst <"${FILE}" >"${FILE%%-template}"
         rm -rf "${FILE}"
     done
-    
+
     #
     # Setup MQTT password
     #
     if [[ ! -e ${MQTT_DIR}/data/passwd-template ]]
     then
-        docker run --rm -v ${MQTT_DIR}/data/passwd:/mosquitto/data/passwd eclipse-mosquitto mosquitto_passwd -U /mosquitto/data/pwdfile
+        docker run --rm -v ${MQTT_DIR}/data/passwd:/mosquitto/data/passwd eclipse-mosquitto mosquitto_passwd -U /mosquitto/data/passwd
         if [[ $? -eq ${SUCCESS} ]]
         then
             echo "MQTT credentials has been setup successfully"
@@ -85,11 +85,11 @@ then
             exit ${FAILURE}
         fi
     fi
-    
+
     #
     # Create compose file
     #
-    if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${DOCKER_COMPOSE_FILE}-template ]]
+    if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template ]]
     then
         cp ${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template ./${DOCKER_COMPOSE_FILE}
     fi
