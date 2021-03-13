@@ -11,6 +11,10 @@ PROJECT_PERSISTANT_STORAGE=/opt/storage
 PROJECT_NAME=ha
 #
 #
+# Docker containers timezone (leave empty to use your host timezone)
+DOCKER_TZ=""
+#
+#
 # Home Assistant HTTP port (Docker port mapping)
 #
 HA_PORT=8123
@@ -27,9 +31,9 @@ MQTT_USERNAME="mosquitto"
 MQTT_PASSWORD="my_password"
 #
 #
-# Zigbee device path
+# Zigbee Coordinator device path (leave empty if no Zigbee Coordinator is used)
 #
-ZB_DEVICE_PATH=/dev/ACM0
+ZB_DEVICE_PATH=""
 #
 #############################################################
 
@@ -44,8 +48,12 @@ FALSE=0
 
 RC=${SUCCESS}
 INITIAL_SETUP=${FALSE}
+SRC_CONFIG_DIR=configuration
 
-DOCKER_TZ="$(timedatectl status | grep "zone" | sed -e 's/^[ ]*Time zone: \(.*\) (.*)$/\1/g')"
+if [[ -z "${DOCKER_TZ}" ]]
+then
+    DOCKER_TZ="$(timedatectl status | grep "zone" | sed -e 's/^[ ]*Time zone: \(.*\) (.*)$/\1/g')"
+fi
 DOCKER_COMPOSE_FILE=home-automation.yaml
 
 PROJECT_PATH=${PROJECT_PERSISTANT_STORAGE}/${PROJECT_NAME}
@@ -55,4 +63,5 @@ export MQTT_DIR=${PROJECT_PATH}/mqtt
 export ZIGBEE2MQTT_DIR=${PROJECT_PATH}/zigbee2mqtt
 
 export DOCKER_TZ HA_PORT MQTT_PORT MQTT_PASSWORD MQTT_USERNAME ZB_DEVICE_PATH
+export PROJECT_NAME PROJECT_PATH PROJECT_PERSISTANT_STORAGE
 ##############################################################
