@@ -1,7 +1,7 @@
 #############################################################
 #
 # Root directory of all persistent files
-# Make sure at least 10GB of free space
+# Make sure it has at least 10GB of free space
 #
 PROJECT_PERSISTANT_STORAGE=/opt/storage
 #
@@ -11,7 +11,7 @@ PROJECT_PERSISTANT_STORAGE=/opt/storage
 PROJECT_NAME=ha
 #
 #
-# Docker containers timezone (leave empty to use your host timezone)
+# Docker containers timezone (leave empty to use your system timezone)
 DOCKER_TZ=""
 #
 #
@@ -38,7 +38,7 @@ ZB_DEVICE_PATH=""
 #############################################################
 
 #
-# DO NOT CHANGE
+# DO NOT CHANGE - SCRIPT INTERNALS
 #
 #############################################################
 SUCCESS=0
@@ -47,20 +47,19 @@ TRUE=1
 FALSE=0
 
 f__echo_err () {
-    >&2 echo "$(tput setaf 1)${1}$(tput sgr0)"
+    >&2 echo "$(tput setaf 1) - ERROR - ${1}$(tput sgr0)"
 }
 f__echo_ok () {
-    echo "$(tput setaf 2)${1}$(tput sgr0)"
+    echo "$(tput setaf 2) - OK - ${1}$(tput sgr0)"
 }
 f__echo_warn () {
-    echo "$(tput setaf 3)${1}$(tput sgr0)"
+    echo "$(tput setaf 3) - WARN - ${1}$(tput sgr0)"
 }
 f__echo () {
     echo "$(tput sgr0)${1}"
 }
 
 RC=${SUCCESS}
-INITIAL_SETUP=${FALSE}
 SRC_CONFIG_DIR=configuration
 
 HOST_IP_LIST=""
@@ -73,6 +72,7 @@ if [[ -z "${DOCKER_TZ}" ]]
 then
     DOCKER_TZ="$(timedatectl status | grep "zone" | sed -re 's/^[ ]*Time zone: (.+)( \(.+)$/\1/g')"
 fi
+
 DOCKER_COMPOSE_FILE=home-automation.yaml
 
 PROJECT_PATH=${PROJECT_PERSISTANT_STORAGE}/${PROJECT_NAME}

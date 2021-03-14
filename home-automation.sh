@@ -33,18 +33,13 @@ else
 fi
 
 #
-# Is compose file present?
+# Is compose file present or setup requested?
 #
 if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] || [[ ${1} == "setup" ]]
 then
     f__echo "File ${DOCKER_COMPOSE_FILE} does not exist or setup explicitly requested"
     f__echo "Going into initial setup mode..."
     shift 1
-    INITIAL_SETUP=${TRUE}
-fi
-
-if [[ ${INITIAL_SETUP} -eq ${TRUE} ]]
-then
     
     #
     # Create files with some restrictions
@@ -64,7 +59,7 @@ then
         # No need to copy zigbee2mqtt if we are not using it
         if [[ "${DIR}"  =~ zigbee2mqtt ]] && [[ -z ${ZB_DEVICE_PATH} ]]
         then
-            f__echo_warn "WARNING: Skipping ${DIR} as ZB_DEVICE_PATH is empty"
+            f__echo_warn "Skipping ${DIR} as ZB_DEVICE_PATH is empty"
             continue
         fi
         cp -r ${SRC_CONFIG_DIR}/"$(basename ${DIR})" ${PROJECT_PATH}
@@ -72,10 +67,35 @@ then
         then
             f__echo_ok "Directory ${DIR} has been setup successfully."
         else
-            f__echo_err "Error: Unable to set up directory: ${DIR}"
+            f__echo_err "Unable to set up directory: ${DIR}"
             exit ${FAILURE}
         fi
     done
+    
+    #
+    # Migrate toke/mosquitto to eclipse-mosquitto (if needed)
+    #
+    if [[ -e ${DOCKER_COMPOSE_FILE} ]]
+    then
+        if ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} images | grep -q "toke/mosquitto"
+        then
+            f__echo_warn "Migration from toke/mosquitto to eclipse-mosquitto is needed."
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} stop && \
+            mv ${MQTT_DIR}/config/mosquitto.conf ${MQTT_DIR}/config/mosquitto.conf-backup && \
+            mv ${MQTT_DIR}/data/passwd ${MQTT_DIR}/data/passwd-backup && \
+            chown -R root:root ${MQTT_DIR} && \
+            mv ${DOCKER_COMPOSE_FILE} ${DOCKER_COMPOSE_FILE}-backup
+            if [[ $? -eq ${SUCCESS} ]]
+            then
+                f__echo_ok "Preparation for toke/mosquitto migration completed."
+            else
+                f__echo_err "Unable to set up toke/mosquitto migration..."
+                exit ${FAILURE}
+            fi
+        else
+            f__echo_warn "toke/mosquitto image not found, migration not needed"
+        fi
+    fi
     
     #
     # Setup initial files
@@ -92,7 +112,7 @@ then
             then
                 f__echo_ok "File ${FILE} has been created successfully."
             else
-                f__echo_err "Error: Unable to set up file: ${FILE}"
+                f__echo_err "Unable to set up file: ${FILE}"
                 exit ${FAILURE}
             fi
         fi
@@ -114,7 +134,7 @@ then
             then
                 f__echo_ok "File ${FILE} has been created successfully."
             else
-                f__echo_err "Error: Unable to set up file: ${FILE}"
+                f__echo_err "Unable to set up file: ${FILE}"
                 exit ${FAILURE}
             fi
         fi
@@ -138,7 +158,7 @@ then
             then
                 f__echo_ok "MQTT password has been hashed successfully."
             else
-                f__echo_err "Error: Unable to set up MQTT credentials."
+                f__echo_err "Unable to set up MQTT credentials."
                 exit ${FAILURE}
             fi
         fi
@@ -154,7 +174,7 @@ then
         then
             f__echo_ok "Project configuration file: ${DOCKER_COMPOSE_FILE} created."
         else
-            f__echo_err "Error: Unable to create ${DOCKER_COMPOSE_FILE} file."
+            f__echo_err "Unable to create ${DOCKER_COMPOSE_FILE} file."
             exit ${FAILURE}
         fi
     fi
@@ -168,7 +188,7 @@ then
         exec "$0" "$@"
         exit 
     else
-        f__echo_ok "Now, start your Home Assistant with: ${0} up"
+        f__echo "Now, start your Home Assistant with: ${0} up"
     fi
     
 else
@@ -186,35 +206,37 @@ else
             then
                 for HOST_IP in ${HOST_IP_LIST}
                 do
-                    f__echo_ok "Home Assistant ready at: http://${HOST_IP}:${HA_PORT}"
+                    f__echo "Home Assistant ready at: http://${HOST_IP}:${HA_PORT}"
                 done
             else
-                f__echo_err "Error: Unable to create ${PROJECT_NAME} containers..."
+                f__echo_err "Unable to create ${PROJECT_NAME} containers..."
             fi
             ;;
         down)
-            f__echo_warn "---"
-            f__echo_warn "WARNING: You are about to ERASE docker containers, image and networks"
+            f__echo "---"
+            f__echo_warn "You are about to ERASE docker containers, image and networks"
             read -p "Are you sure? (y/n) " -r
             if [[ ${REPLY} =~ ^[Yy]$ ]]
             then
                 ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} down --rmi all 2>&1
                 RC=$?
-            fi
-            unset REPLY
-            f__echo_warn "---"
-            f__echo_warn "WARNING: You are about to ERASE persistent storage and configuration"
-            read -p "Are you sure? (y/n) " -r
-            if [[ ${REPLY} =~ ^[Yy]$ ]]
-            then
-                rm -rf ${PROJECT_PATH}
-                f__echo "Project storage ${PROJECT_PATH} removed."
-                rm -rf ./${DOCKER_COMPOSE_FILE}
-                f__echo "Project configuration ${DOCKER_COMPOSE_FILE} removed"
-                
+                unset REPLY
+                f__echo "---"
+                f__echo_warn "You are about to ERASE persistent storage and configuration"
+                read -p "Are you sure? (y/n) " -r
+                if [[ ${REPLY} =~ ^[Yy]$ ]]
+                then
+                    rm -rf ${PROJECT_PATH}
+                    f__echo "Project storage ${PROJECT_PATH} removed."
+                    rm -rf ./${DOCKER_COMPOSE_FILE}
+                    f__echo "Project configuration ${DOCKER_COMPOSE_FILE} removed"
+                    
+                else
+                    f__echo "Persistent storage ${PROJECT_PATH} path left unchanged."
+                    f__echo "Project configuration ${DOCKER_COMPOSE_FILE} not removed."
+                fi
             else
-                f__echo "Persistent storage ${PROJECT_PATH} path left unchanged."
-                f__echo "Project configuration ${DOCKER_COMPOSE_FILE} not removed."
+                f__echo "No changes made."
             fi
             ;;
         *)
