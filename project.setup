@@ -46,13 +46,32 @@ FAILURE=1
 TRUE=1
 FALSE=0
 
+f__echo_err () {
+    >&2 echo "$(tput setaf 1)${1}$(tput sgr0)"
+}
+f__echo_ok () {
+    echo "$(tput setaf 2)${1}$(tput sgr0)"
+}
+f__echo_warn () {
+    echo "$(tput setaf 3)${1}$(tput sgr0)"
+}
+f__echo () {
+    echo "$(tput sgr0)${1}"
+}
+
 RC=${SUCCESS}
 INITIAL_SETUP=${FALSE}
 SRC_CONFIG_DIR=configuration
 
+HOST_IP_LIST=""
+if [[ -x "$(command -v hostname 2>/dev/null)" ]]
+then
+    HOST_IP_LIST=$(hostname -i | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+fi
+
 if [[ -z "${DOCKER_TZ}" ]]
 then
-    DOCKER_TZ="$(timedatectl status | grep "zone" | sed -e 's/^[ ]*Time zone: \(.*\) (.*)$/\1/g')"
+    DOCKER_TZ="$(timedatectl status | grep "zone" | sed -re 's/^[ ]*Time zone: (.+)( \(.+)$/\1/g')"
 fi
 DOCKER_COMPOSE_FILE=home-automation.yaml
 
@@ -64,4 +83,5 @@ export ZIGBEE2MQTT_DIR=${PROJECT_PATH}/zigbee2mqtt
 
 export DOCKER_TZ HA_PORT MQTT_PORT MQTT_PASSWORD MQTT_USERNAME ZB_DEVICE_PATH
 export PROJECT_NAME PROJECT_PATH PROJECT_PERSISTANT_STORAGE
+export HOST_IP_LIST
 ##############################################################
