@@ -1,11 +1,6 @@
 #!/bin/bash
 
 #
-# Load configuration 
-#
-. ./project.setup || { >&2 echo "Error: project setup file not found!" ; exit 1 ; }
-
-#
 # Are you root?
 #
 if [[ "${UID}" -ne 0 ]]
@@ -14,6 +9,12 @@ then
     exec sudo "${0}" "${@}"
     exit
 fi
+
+#
+# Load configuration 
+#
+source ./home-automation.cfg || { >&2 echo "Error: configuration file not found!" ; exit 1 ; }
+source ./configuration/home-automation.env || { >&2 echo "Error: environment file not found!" ; exit 1 ; }
 
 if [[ ! -x "$(command -v docker 2>/dev/null)" ]]
 then
