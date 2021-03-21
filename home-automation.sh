@@ -16,23 +16,6 @@ fi
 source ./home-automation.cfg || { >&2 echo "Error: configuration file not found!" ; exit 1 ; }
 source ./configuration/home-automation.env || { >&2 echo "Error: environment file not found!" ; exit 1 ; }
 
-if [[ ! -x "$(command -v docker 2>/dev/null)" ]]
-then
-    f__echo_err "'docker' binary not found or not in the PATH"
-    f__echo_err "Make sure docker-ce engine is installed and working"
-    f__echo_err "See: https://docs.docker.com/install"
-    exit ${FAILURE}
-fi
-
-if [[ -x "$(command -v docker-compose 2>/dev/null)" ]]
-then
-    DOCKER_COMPOSE_BIN=$(command -v docker-compose)
-else
-    f__echo_err "'docker-compose' binary not found or not in the PATH"
-    f__echo_err "See: https://github.com/docker/compose/releases"
-    exit ${FAILURE}
-fi
-
 #
 # Is compose file present or setup requested?
 #
@@ -221,22 +204,22 @@ else
             then
                 ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} down --rmi all 2>&1
                 RC=$?
-                unset REPLY
-                f__echo "---"
-                f__echo_warn "You are about to ERASE persistent storage and configuration"
-                read -p "Are you sure? (y/n) " -r
-                if [[ ${REPLY} =~ ^[Yy]$ ]]
-                then
-                    rm -rf ${PROJECT_PATH}
-                    f__echo "Project storage ${PROJECT_PATH} removed."
-                    rm -rf ./${DOCKER_COMPOSE_FILE}
-                    f__echo "Project configuration ${DOCKER_COMPOSE_FILE} removed"
-                else
-                    f__echo "Persistent storage ${PROJECT_PATH} path left unchanged."
-                    f__echo "Project configuration ${DOCKER_COMPOSE_FILE} not removed."
-                fi
             else
                 f__echo "No changes made."
+            fi
+            unset REPLY
+            f__echo "---"
+            f__echo_warn "You are about to ERASE persistent storage and configuration"
+            read -p "Are you sure? (y/n) " -r
+            if [[ ${REPLY} =~ ^[Yy]$ ]]
+            then
+                rm -rf ${PROJECT_PATH}
+                f__echo "Project storage ${PROJECT_PATH} removed."
+                rm -rf ./${DOCKER_COMPOSE_FILE}
+                f__echo "Project configuration ${DOCKER_COMPOSE_FILE} removed"
+            else
+                f__echo "Persistent storage ${PROJECT_PATH} path left unchanged."
+                f__echo "Project configuration ${DOCKER_COMPOSE_FILE} not removed."
             fi
             ;;
         *)
