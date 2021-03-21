@@ -40,18 +40,19 @@ if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] || [[ ${1} == "setup" ]]
 then
     f__echo "File ${DOCKER_COMPOSE_FILE} does not exist or setup explicitly requested"
     f__echo "Going into initial setup mode..."
-    shift 1
-    
+    # Remove "setup" parameter
+    [[ ${1} == "setup" ]] && shift 1
+
     #
     # Create files with some restrictions
     #
     umask 026
-    
+
     #
     # Setup directory structure
     #
     [[ ! -e  ${PROJECT_PATH} ]] && mkdir -p ${PROJECT_PATH}
-    
+
     #
     # Copy initial and template files to target project path
     #
@@ -72,7 +73,7 @@ then
             exit ${FAILURE}
         fi
     done
-    
+
     #
     # Migrate toke/mosquitto to eclipse-mosquitto (if needed)
     #
@@ -97,7 +98,7 @@ then
             f__echo_warn "toke/mosquitto image not found, migration not needed"
         fi
     fi
-    
+
     #
     # Setup initial files
     #
@@ -119,7 +120,7 @@ then
         fi
         rm -rf "${INIT_FILE}"
     done
-    
+
     #
     # Update template YAML files with config values
     #
@@ -179,7 +180,7 @@ then
             exit ${FAILURE}
         fi
     fi
-    
+
     #
     # Re-exec if parameters were given 
     #
@@ -191,7 +192,6 @@ then
     else
         f__echo "Now, start your Home Assistant with: ${0} up"
     fi
-    
 else
     case "${1}" in
         start|up)
@@ -231,7 +231,6 @@ else
                     f__echo "Project storage ${PROJECT_PATH} removed."
                     rm -rf ./${DOCKER_COMPOSE_FILE}
                     f__echo "Project configuration ${DOCKER_COMPOSE_FILE} removed"
-                    
                 else
                     f__echo "Persistent storage ${PROJECT_PATH} path left unchanged."
                     f__echo "Project configuration ${DOCKER_COMPOSE_FILE} not removed."
