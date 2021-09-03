@@ -6,7 +6,7 @@
 if [[ "${UID}" -ne 0 ]]
 then
     f__echo_err "This script must be run as root, re-exec with sudo..."
-    exec sudo "${0}" "${@}"
+    exec sudo "${0}" "${*}"
     exit
 fi
 
@@ -167,10 +167,10 @@ then
     #
     # Re-exec if parameters were given 
     #
-    if [[ $# -eq 1 ]] && [[ ! "$@" =~ "down" ]]
+    if [[ $# -eq 1 ]] && [[ ! "${*}" =~ "down" ]]
     then
-        f__echo "Restarting now with previously given parameters: $@"
-        exec "$0" "$@"
+        f__echo "Restarting now with previously given parameters: ${*}"
+        exec "$0" "${*}"
         exit 
     else
         f__echo "Now, start your Home Assistant with: ${0} up"
@@ -229,4 +229,3 @@ else
     esac
     exit ${RC}
 fi
-
