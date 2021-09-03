@@ -222,8 +222,15 @@ else
                 f__echo "Project configuration ${DOCKER_COMPOSE_FILE} not removed."
             fi
             ;;
+        update)
+            f__echo "Updating container images... It wil take a while..."
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} stop 2>&1 && \
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} pull 2>&1 && \
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} up -d --remove-orphans  2>&1
+            RC=$?
+        ;;
         *)
-            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} "${@}" 2>&1
+            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} "${*}" 2>&1
             RC=$?
             ;;
     esac

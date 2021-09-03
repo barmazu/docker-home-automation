@@ -15,7 +15,7 @@ The home automation playground/sandbox is ready under 3 minutes without any hass
 - Review and adjust `home-automation.cfg` file
     - it's pretty straight-forward, may be left unchanged
     - important defaults are as fallows:
-        - PROJECT_PERSISTANT_STORAGE = /opt/storage
+        - PROJECT_PERSISTENT_STORAGE = /opt/storage
         - PROJECT_NAME = ha
         - HA_PORT = 8123
         
@@ -28,14 +28,12 @@ The home automation playground/sandbox is ready under 3 minutes without any hass
 
 ### Setup Mode
 - You may request setup mode which will recreate project configuration file `home-automation.yaml` even if exists.
-In this mode configuration files in persistent storage will __NOT__ be overwritten if already exist.
+In this mode configuration files in persistent storage will __NOT__ be overwritten if already exists.
 As root user run: `./home-automation.sh setup`
 
 ### Daily operations:
 - Update project images (at any time):
-  - `./home-automation.sh stop`  - stops all containers
-  - `./home-automation.sh pull`  - pulls latest images available
-  - `./home-automation.sh start` - start/recreation of containers
+  - `./home-automation.sh update`  - update all enabled containers' images within the project (if available)
 
 - Check containers health:
   - `./home-automation.sh ps`  - prints all vital data and statuses for all containers in the configuration
@@ -46,13 +44,13 @@ As root user run: `./home-automation.sh setup`
 ### Notes, remarks and hints:
 - You can use it as a base for your Smart Home solution but keep in mind, this is just a simple orchestration for containers, nothing more.
 - Once project is running all further configuration must be done within persistent storage for respective services/containers:
-    - `<PROJECT_PERSISTANT_STORAGE>/<PROJECT_NAME>/homeassistant/config` directory for home-assistant (often needed)
-    - `<PROJECT_PERSISTANT_STORAGE>/<PROJECT_NAME>/zigbee2mqtt/data` directory for zigbee2mqtt (rarely needed)
-    - `<PROJECT_PERSISTANT_STORAGE>/<PROJECT_NAME>/mqtt/config` directory for mqtt (very rarely needed, for most cases - never)
+    - `<PROJECT_PERSISTENT_STORAGE>/<PROJECT_NAME>/homeassistant/config` directory for home-assistant (often needed)
+    - `<PROJECT_PERSISTENT_STORAGE>/<PROJECT_NAME>/zigbee2mqtt/data` directory for zigbee2mqtt (rarely needed)
+    - `<PROJECT_PERSISTENT_STORAGE>/<PROJECT_NAME>/mqtt/config` directory for mqtt (very rarely needed, for most cases - never)
 - You can expose your persistent storage via Samba (Samba must be installed and running on Docker host) to update files from Windows, for example:
 ```
 [HA]
-      path = <PROJECT_PERSISTANT_STORAGE>/<PROJECT_NAME>
+      path = <PROJECT_PERSISTENT_STORAGE>/<PROJECT_NAME>
       read only = no
       guest ok = yes
       force user = root
@@ -60,6 +58,6 @@ As root user run: `./home-automation.sh setup`
       create mask = 0664
       directory mask = 0775
 ```
-  where: <PROJECT_PERSISTANT_STORAGE> and <PROJECT_NAME> are values from `home-assistant.cfg` file (default: `/opt/storage/ha`)
+  where: <PROJECT_PERSISTENT_STORAGE> and <PROJECT_NAME> are values from `home-assistant.cfg` file (default: `/opt/storage/ha`)
 - Make sure you are running backup of persistent storage regularly if seriously building up your Smart Home with this solution
 - In case you didn't noticed, `home-automation.sh` is basically a shell wrapper for docker-compose command, see: ./home-automation.sh help for more options
