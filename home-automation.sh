@@ -13,7 +13,9 @@ fi
 #
 # Load configuration 
 #
+# shellcheck disable=SC1091
 source ./home-automation.cfg || { >&2 echo "Error: configuration file not found!" ; exit 1 ; }
+# shellcheck disable=SC1091
 source ./configuration/home-automation.env || { >&2 echo "Error: environment file not found!" ; exit 1 ; }
 
 #
@@ -34,7 +36,7 @@ then
     #
     # Setup directory structure
     #
-    [[ ! -e  ${PROJECT_PATH} ]] && mkdir -p ${PROJECT_PATH}
+    [[ ! -e  ${PROJECT_PATH} ]] && mkdir -p "${PROJECT_PATH}"
 
     #
     # Copy initial and template files to target project path
@@ -47,13 +49,13 @@ then
             f__echo_warn "Skipping ${DIR} as ZB_DEVICE_PATH is empty"
             continue
         fi
-        cp -r ${SRC_CONFIG_DIR}/"$(basename ${DIR})" ${PROJECT_PATH}
+        cp -r "${SRC_CONFIG_DIR}/$(basename "${DIR}")" "${PROJECT_PATH}"
         if [[ $? -eq ${SUCCESS} ]]
         then
             f__echo_ok "Directory ${DIR} has been setup successfully."
         else
             f__echo_err "Unable to set up directory: ${DIR}"
-            exit ${FAILURE}
+            exit "${FAILURE}"
         fi
     done
 
@@ -62,20 +64,20 @@ then
     #
     if [[ -e ${DOCKER_COMPOSE_FILE} ]]
     then
-        if ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} images | grep -q "toke/mosquitto"
+        if ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" images | grep -q "toke/mosquitto"
         then
             f__echo_warn "Migration from toke/mosquitto to eclipse-mosquitto is needed."
-            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} stop && \
-            mv ${MQTT_DIR}/config/mosquitto.conf ${MQTT_DIR}/config/mosquitto.conf-backup && \
-            mv ${MQTT_DIR}/data/passwd ${MQTT_DIR}/data/passwd-backup && \
-            chown -R root:root ${MQTT_DIR} && \
-            mv ${DOCKER_COMPOSE_FILE} ${DOCKER_COMPOSE_FILE}-backup
+            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" stop && \
+            mv "${MQTT_DIR}/config/mosquitto.conf" "${MQTT_DIR}/config/mosquitto.conf-backup" && \
+            mv "${MQTT_DIR}/data/passwd" "${MQTT_DIR}/data/passwd-backup" && \
+            chown -R root:root "${MQTT_DIR}" && \
+            mv "${DOCKER_COMPOSE_FILE}" "${DOCKER_COMPOSE_FILE}-backup"
             if [[ $? -eq ${SUCCESS} ]]
             then
                 f__echo_ok "Preparation for toke/mosquitto migration completed."
             else
                 f__echo_err "Unable to set up toke/mosquitto migration..."
-                exit ${FAILURE}
+                exit "${FAILURE}"
             fi
         else
             f__echo_warn "toke/mosquitto image not found, migration not needed"
@@ -85,7 +87,7 @@ then
     #
     # Setup initial files
     #
-    INITIAL_FILES="$(find ${PROJECT_PATH} -type f -name "*-initial")"
+    INITIAL_FILES="$(find "${PROJECT_PATH}" -type f -name "*-initial")"
     for INIT_FILE in ${INITIAL_FILES}
     do
         FILE="${INIT_FILE%%-initial}"
@@ -98,7 +100,7 @@ then
                 f__echo_ok "File ${FILE} has been created successfully."
             else
                 f__echo_err "Unable to set up file: ${FILE}"
-                exit ${FAILURE}
+                exit "${FAILURE}" 
             fi
         fi
         rm -rf "${INIT_FILE}"
@@ -107,13 +109,14 @@ then
     #
     # Update template YAML files with config values
     #
-    TEMPLATE_FILES="$(find ${PROJECT_PATH} -type f -name "*-template")"
+    TEMPLATE_FILES="$(find "${PROJECT_PATH}" -type f -name "*-template")"
     for TEMPL_FILE in ${TEMPLATE_FILES}
     do
         FILE="${TEMPL_FILE%%-template}"
         if [[ ! -e "${FILE}" ]]
         then
             f__echo "Creating ${FILE} file using template..."
+            # shellcheck disable=SC2016
             envsubst '$HOME_ASSISTANT_DIR $ZIGBEE2MQTT_DIR $MQTT_DIR $DOCKER_TZ $HA_PORT $MQTT_PORT $MQTT_PASSWORD $MQTT_USERNAME
                       $PROJECT_NAME $PROJECT_PATH $PROJECT_PERSISTANT_STORAGE' <"${TEMPL_FILE}" >"${FILE}"
             if [[ $? -eq ${SUCCESS} ]]
@@ -121,7 +124,7 @@ then
                 f__echo_ok "File ${FILE} has been created successfully."
             else
                 f__echo_err "Unable to set up file: ${FILE}"
-                exit ${FAILURE}
+                exit "${FAILURE}"
             fi
         fi
         rm -rf "${TEMPL_FILE}"
@@ -133,11 +136,11 @@ then
     if [[ ! -e ${MQTT_DIR}/data/passwd-template ]]
     then
         # Make sure we are hashing plain text password
-        if grep -q "${MQTT_PASSWORD}" ${MQTT_DIR}/data/passwd
+        if grep -q "${MQTT_PASSWORD}" "${MQTT_DIR}/data/passwd"
         then
             f__echo "Hashing MQTT plain text password..."
             docker run --rm \
-                -v ${MQTT_DIR}/data/passwd:/mosquitto/data/passwd \
+                -v "${MQTT_DIR}/data/passwd":/mosquitto/data/passwd \
                 eclipse-mosquitto \
                     mosquitto_passwd -U /mosquitto/data/passwd >/dev/null 2>&1
             if [[ $? -eq ${SUCCESS} ]]
@@ -145,7 +148,7 @@ then
                 f__echo_ok "MQTT password has been hashed successfully."
             else
                 f__echo_err "Unable to set up MQTT credentials."
-                exit ${FAILURE}
+                exit "${FAILURE}"
             fi
         fi
     fi
@@ -155,6 +158,7 @@ then
     #
     if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template ]]
     then
+        # shellcheck disable=SC2016
         envsubst '$HOME_ASSISTANT_DIR $ZIGBEE2MQTT_DIR $MQTT_DIR $DOCKER_TZ 
                   $HA_PORT $MQTT_PORT $MQTT_PASSWORD $MQTT_USERNAME
                   $PROJECT_NAME $PROJECT_PATH $PROJECT_PERSISTANT_STORAGE' <"${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template" >"./${DOCKER_COMPOSE_FILE}"
@@ -163,7 +167,7 @@ then
             f__echo_ok "Project configuration file: ${DOCKER_COMPOSE_FILE} created."
         else
             f__echo_err "Unable to create ${DOCKER_COMPOSE_FILE} file."
-            exit ${FAILURE}
+            exit "${FAILURE}"
         fi
     fi
 
@@ -183,10 +187,10 @@ else
         start|up)
             if [[ -n "${ZB_DEVICE_PATH}" ]]
             then
-                ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} up -d --remove-orphans 2>&1
+                ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" up -d --remove-orphans 2>&1
                 RC=$?
             else
-                ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} up -d --remove-orphans --no-deps mqtt home-assistant 2>&1
+                ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" up -d --remove-orphans --no-deps mqtt home-assistant 2>&1
                 RC=$?
             fi
             if [[ ${RC} -eq ${SUCCESS} ]]
@@ -205,7 +209,7 @@ else
             read -p "Are you sure? (y/n) " -r
             if [[ ${REPLY} =~ ^[Yy]$ ]]
             then
-                ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} down --rmi all 2>&1
+                ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" down --rmi all 2>&1
                 RC=$?
             else
                 f__echo "No changes made."
@@ -216,9 +220,9 @@ else
             read -p "Are you sure? (y/n) " -r
             if [[ ${REPLY} =~ ^[Yy]$ ]]
             then
-                rm -rf ${PROJECT_PATH}
+                rm -rf "${PROJECT_PATH}"
                 f__echo "Project storage ${PROJECT_PATH} removed."
-                rm -rf ./${DOCKER_COMPOSE_FILE}
+                rm -rf "./${DOCKER_COMPOSE_FILE}"
                 f__echo "Project configuration ${DOCKER_COMPOSE_FILE} removed"
             else
                 f__echo "Persistent storage ${PROJECT_PATH} path left unchanged."
@@ -227,15 +231,15 @@ else
             ;;
         update)
             f__echo "Updating container images... It will take a while..."
-            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} stop 2>&1 && \
-            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} pull 2>&1 && \
-            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} up -d --remove-orphans  2>&1
+            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" stop 2>&1 && \
+            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" pull 2>&1 && \
+            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" up -d --remove-orphans  2>&1
             RC=$?
-        ;;
+            ;;
         *)
-            ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} ${*} 2>&1
+            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" "${@}" 2>&1
             RC=$?
             ;;
     esac
-    exit ${RC}
+    exit "${RC}"
 fi
