@@ -25,8 +25,8 @@ mqtt:
 ## Serial settings
 serial:
   
-  # Location of Zigbee sniffer
-  port: ${ZB_DEVICE_PATH}
+  # Location of Zigbee sniffer, device is dicovered on the host and passed to container as "/dev/zigbee" - do not change this
+  port: /dev/zigbee
 
 ## Advanced settings
 advanced:

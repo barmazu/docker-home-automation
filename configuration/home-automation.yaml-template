@@ -1,5 +1,3 @@
-version: "3.7"
-
 networks:
     project_network:
         ipam:
@@ -30,7 +28,7 @@ services:
         environment:
             - "TZ=${DOCKER_TZ}"
         devices:
-            - "${ZB_DEVICE_PATH}:${ZB_DEVICE_PATH}"
+            - "${ZB_DEVICE_PATH}:/dev/zigbee"
         networks:
             project_network:
                 ipv4_address: 172.28.0.3
@@ -56,4 +54,3 @@ services:
             - "zigbee2mqtt"
         volumes:
             - ${HOME_ASSISTANT_DIR}/config:/config
-

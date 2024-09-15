@@ -114,7 +114,8 @@ then
         if [[ ! -e "${FILE}" ]]
         then
             f__echo "Creating ${FILE} file using template..."
-            envsubst <"${TEMPL_FILE}" >"${FILE}"
+            envsubst '$HOME_ASSISTANT_DIR $ZIGBEE2MQTT_DIR $MQTT_DIR $DOCKER_TZ $HA_PORT $MQTT_PORT $MQTT_PASSWORD $MQTT_USERNAME
+                      $PROJECT_NAME $PROJECT_PATH $PROJECT_PERSISTANT_STORAGE' <"${TEMPL_FILE}" >"${FILE}"
             if [[ $? -eq ${SUCCESS} ]]
             then
                 f__echo_ok "File ${FILE} has been created successfully."
@@ -154,7 +155,9 @@ then
     #
     if [[ ! -e ${DOCKER_COMPOSE_FILE} ]] && [[ -s ${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template ]]
     then
-        envsubst <"${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template" >"./${DOCKER_COMPOSE_FILE}"
+        envsubst '$HOME_ASSISTANT_DIR $ZIGBEE2MQTT_DIR $MQTT_DIR $DOCKER_TZ 
+                  $HA_PORT $MQTT_PORT $MQTT_PASSWORD $MQTT_USERNAME
+                  $PROJECT_NAME $PROJECT_PATH $PROJECT_PERSISTANT_STORAGE' <"${SRC_CONFIG_DIR}/${DOCKER_COMPOSE_FILE}-template" >"./${DOCKER_COMPOSE_FILE}"
         if [[ $? -eq ${SUCCESS} ]]
         then
             f__echo_ok "Project configuration file: ${DOCKER_COMPOSE_FILE} created."
@@ -228,7 +231,7 @@ else
             ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} pull 2>&1 && \
             ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} up -d --remove-orphans  2>&1
             RC=$?
-            ;;
+        ;;
         *)
             ${DOCKER_COMPOSE_BIN} -f ${DOCKER_COMPOSE_FILE} -p ${PROJECT_NAME} ${*} 2>&1
             RC=$?

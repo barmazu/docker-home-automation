@@ -14,3 +14,6 @@ listener 1883
 
 # Basic logging
 log_dest file /mosquitto/log/mosquitto.log
+log_timestamp_format %Y-%m-%dT%H:%M:%S
+log_type warning
+log_type error
