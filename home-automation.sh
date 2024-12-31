@@ -233,7 +233,7 @@ else
             f__echo "Updating container images... It will take a while..."
             ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" stop 2>&1 && \
             ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" pull 2>&1 && \
-            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" up -d --remove-orphans  2>&1
+            ${DOCKER_COMPOSE_BIN} -f "${DOCKER_COMPOSE_FILE}" -p "${PROJECT_NAME}" up -d --remove-orphans --prune 2>&1
             RC=$?
             ;;
         *)
